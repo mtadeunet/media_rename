@@ -1,20 +1,20 @@
 from config import SearchType
 from name_resolver import NameResolver
 import os
+import filecmp
 
 
 default_directory_config = { "search": SearchType.Exif, "directory_pattern": "%Y/%Y-%m-%d", "file_pattern": "%Y%m%d_%H%M%S_%f" }
 
 class MediaRenamer:
-    def __init__(self, simulate: bool = True, rename_only: bool = False, special_directories: dict = {}, log_callback: callable = print):
+    def __init__(self, simulate: bool = True, create_sub_directories: bool = False, special_directories: dict = {}, log_callback: callable = print):
         self.simulate = simulate
-        self.rename_only = rename_only
+        self.create_sub_directories = create_sub_directories
         self.special_directories = special_directories
         self.log = log_callback
 
 
-
-    def rename_file(self, file_path: str):
+    def process_file(self, file_path: str, working_directory: str):
         try:
             if not os.path.exists(file_path):
                 self.log("ERROR: The file does not exist: " + file_path)
@@ -29,32 +29,56 @@ class MediaRenamer:
 
             resolver = NameResolver(file_path, directory_config)
 
-            if self.rename_only:
-                self.log(f"{file_path} -> {resolver.name}")
-            else:
-                self.log(f"{file_path} -> {resolver.name} ({resolver.suggested_directory})")
+            try:
+                resolver.process()
+            except Exception as e:
+                self.log(f"ERROR: {e}")
 
-            if self.simulate:
+            target = None
+
+            if resolver.success:
+                if self.create_sub_directories:
+                    target = os.path.join(working_directory, resolver.suggested_directory, resolver.name)
+                else:
+                    target = os.path.join(working_directory, resolver.name)
+            else:
+                self.log("INVALID: " + file_path)
+                target = os.path.join(working_directory, "invalid", os.path.basename(file_path))
+
+            # if the source and target are the same, skip...we're fine
+            if file_path == target:
+                self.log("SKIP: " + target)
                 return
 
-            if not resolver.success:
-                raise Exception("The date search was not successful for file: " + file_path)
+            # from here, the source and the target are in different locations
+            
+            if os.path.exists(target):
+                # deal with duplicate file
+                if filecmp.cmp(file_path, target):
+                    # it's exactly the same file...delete the source
+                    self.log(f"DELETE: {file_path}")
 
-            # if not self.rename_only:
+                    not self.simulate and os.remove(file_path)
+                    return
+                else:
+                    # it's a duplicate filename but the file contents are different...move to "duplicates" dir
+                    target = os.path.join(working_directory, "duplicates", os.path.basename(target))
+                    self.log("DUPLICATE: " + target)
 
-            # if not self.rename_only:
-                # os.rename(file_path, resolver.get_renamed_path())
+            not self.simulate and os.makedirs(os.path.dirname(target), exist_ok=True)
+            self.log(f"RENAME: {file_path} -> {target}")
+            not self.simulate and os.rename(file_path, target)
 
         except Exception as e:
             self.log(f"ERROR: {e}")
             return
 
     
-    def rename_file_in_directory(self, directory: str, recursive: bool = False):
-        for file_path in os.listdir(directory):
-            full_path = os.path.join(directory, file_path)
+    def process_directory(self, current_directory: str, working_directory: str, recursive: bool = False):
+        for file_path in os.listdir(current_directory):
+            full_path = os.path.join(current_directory, file_path)
 
             if os.path.isfile(full_path):
-                self.rename_file(full_path)
+                self.process_file(full_path, working_directory)
             elif recursive and file_path not in ["invalid", "duplicates"]:
-                self.rename_file_in_directory(full_path)
+                self.process_directory(full_path, working_directory, recursive)

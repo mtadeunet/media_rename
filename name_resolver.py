@@ -12,14 +12,7 @@ class NameResolver:
         self.name = None
         self.suggested_directory = None
         self.config = config
-
-        if config["search"] == SearchType.Image:
-            self.from_image()
-        elif config["search"] == SearchType.FileSystem:
-            self.from_creation_date()
-        else:
-            self.from_exif()
-
+        self.metadata = None
 
     @property
     def success(self):
@@ -46,6 +39,14 @@ class NameResolver:
         self.name = self.date.strftime(pattern) + os.path.splitext(self.file_path)[1]
         self.suggested_directory = self.date.strftime(self.config["directory_pattern"])
 
+
+    def process(self):
+        if self.config["search"] == SearchType.Image:
+            self.from_image()
+        elif self.config["search"] == SearchType.FileSystem:
+            self.from_creation_date()
+        else:
+            self.from_exif()
 
     def from_image(self) -> str:
         # Convert image to base64
@@ -86,12 +87,12 @@ class NameResolver:
 
 
     def from_exif(self):
-        metadatas = exiftool.ExifToolHelper().get_metadata(self.file_path)
+        self.metadata = exiftool.ExifToolHelper().get_metadata(self.file_path)
 
-        if len(metadatas) > 1:
+        if len(self.metadata) > 1:
             raise ValueError(f"ERROR: Multiple metadata found for file: {self.file_path}")
 
-        metadata = metadatas[0]
+        metadata = self.metadata[0]
 
         if metadata["File:FileType"] == "JPEG":
             if "Composite:SubSecDateTimeOriginal" in metadata:
@@ -110,12 +111,12 @@ class NameResolver:
 
 
     def from_creation_date(self):
-        metadatas = exiftool.ExifToolHelper().get_metadata(self.file_path)
+        self.metadata = exiftool.ExifToolHelper().get_metadata(self.file_path)
 
-        if len(metadatas) > 1:
+        if len(self.metadata) > 1:
             raise ValueError(f"ERROR: Multiple metadata found for file: {self.file_path}")
 
-        metadata = metadatas[0]
+        metadata = self.metadata[0]
 
         date = metadata["File:FileModifyDate"]
         
