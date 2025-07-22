@@ -94,7 +94,7 @@ class NameResolver:
 
         metadata = self.metadata[0]
 
-        if metadata["File:FileType"] == "JPEG":
+        if metadata["File:FileType"] in ["JPEG", "JPG", "PNG"]:
             if "Composite:SubSecDateTimeOriginal" in metadata:
                 self.date = self.parse_date(metadata["Composite:SubSecDateTimeOriginal"])
             elif "EXIF:DateTimeOriginal" in metadata:

@@ -1,3 +1,4 @@
+from pathlib import Path
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
@@ -31,6 +32,8 @@ class PathPickerApp:
         self.create_subdirs_var = tk.BooleanVar(value=False)
         self.simulate_var = tk.BooleanVar(value=False)
         self.recursive_var = tk.BooleanVar(value=False)
+        self.remove_empty_dirs_var = tk.BooleanVar(value=False)
+        self.invalid_as_file_date_var = tk.BooleanVar(value=False)
 
         ttk.Checkbutton(
             frame,
@@ -50,9 +53,21 @@ class PathPickerApp:
             variable=self.recursive_var
         ).grid(row=3, column=0, columnspan=2, sticky="w")
 
+        ttk.Checkbutton(
+            frame,
+            text="Remove empty directories",
+            variable=self.remove_empty_dirs_var
+        ).grid(row=4, column=0, columnspan=2, sticky="w")
+
+        ttk.Checkbutton(
+            frame,
+            text="Use file creation date for invalid files",
+            variable=self.invalid_as_file_date_var
+        ).grid(row=5, column=0, columnspan=2, sticky="w")
+
         # Buttons
         button_frame = ttk.Frame(frame)
-        button_frame.grid(row=4, column=0, columnspan=2, pady=(10, 0), sticky="ew")
+        button_frame.grid(row=6, column=0, columnspan=2, pady=(10, 0), sticky="ew")
 
         ttk.Button(button_frame, text="Print State", command=self.print_state).pack(side="left", padx=(0, 5))
         ttk.Button(button_frame, text="Process", command=self.process).pack(side="left")
@@ -79,6 +94,8 @@ class PathPickerApp:
         self.log(f"Create sub-directories: {self.create_subdirs_var.get()}")
         self.log(f"Simulate: {self.simulate_var.get()}")
         self.log(f"Recursive: {self.recursive_var.get()}")
+        self.log(f"Remove empty directories: {self.remove_empty_dirs_var.get()}")
+        self.log(f"Use file creation date for invalid files: {self.invalid_as_file_date_var.get()}")
 
     def process(self):
         # Run the real work in a background thread
@@ -87,11 +104,24 @@ class PathPickerApp:
     def run_process(self):
         self.log("Processing started...")
         try:
-            renamer = MediaRenamer(simulate=self.simulate_var.get(), create_sub_directories=self.create_subdirs_var.get(), special_directories=config["special_directories"], log_callback=self.log)
-            renamer.process_directory(self.path_entry.get(), self.path_entry.get(), recursive=self.recursive_var.get())
+            renamer = MediaRenamer(
+                simulate=self.simulate_var.get(), 
+                create_sub_directories=self.create_subdirs_var.get(), 
+                special_directories=config["special_directories"], 
+                log_callback=self.log,
+                delete_empty_directories=self.remove_empty_dirs_var.get(),
+                invalid_as_file_date=self.invalid_as_file_date_var.get()
+            )
+            
+            # Process the directory
+            renamer.process_directory(
+                Path(self.path_entry.get()), 
+                Path(self.path_entry.get()), 
+                recursive=self.recursive_var.get()
+            )
         except Exception as e:
             self.log(f"ERROR: {e}")
-        self.log("Processing finished.")        
+        self.log("Processing finished.")
 
     def log(self, message):
         print(message)
