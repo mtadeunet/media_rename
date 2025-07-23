@@ -81,7 +81,10 @@ class MediaRenamer:
                     return
                 else:
                     # it's a duplicate filename but the file contents are different...move to "duplicates" dir
-                    target = os.path.join(working_directory, "duplicates", os.path.basename(target))
+                    # calculate hash of file
+                    hash = hashlib.md5(open(entry.path, "rb").read()).hexdigest()
+                    target_filename, target_extension = os.path.splitext(os.path.basename(target))
+                    target = os.path.join(working_directory, "duplicates", f"{target_filename}_{hash}.{target_extension}")
                     self.log(f"DUPLICATE: {entry.path} = {target}")
                     self.duplicate_files.append(target)
 
