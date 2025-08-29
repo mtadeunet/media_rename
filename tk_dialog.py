@@ -34,6 +34,7 @@ class PathPickerApp:
         self.recursive_var = tk.BooleanVar(value=False)
         self.remove_empty_dirs_var = tk.BooleanVar(value=False)
         self.invalid_as_file_date_var = tk.BooleanVar(value=False)
+        self.apply_dst_var = tk.BooleanVar(value=True)
 
         ttk.Checkbutton(
             frame,
@@ -65,9 +66,16 @@ class PathPickerApp:
             variable=self.invalid_as_file_date_var
         ).grid(row=5, column=0, columnspan=2, sticky="w")
 
+        # DST Checkbox
+        ttk.Checkbutton(
+            frame,
+            text="Apply daylight savings for misbehaved videos",
+            variable=self.apply_dst_var
+        ).grid(row=6, column=0, columnspan=2, sticky="w")
+
         # Buttons
         button_frame = ttk.Frame(frame)
-        button_frame.grid(row=6, column=0, columnspan=2, pady=(10, 0), sticky="ew")
+        button_frame.grid(row=8, column=0, columnspan=2, pady=(10, 0), sticky="ew")
 
         ttk.Button(button_frame, text="Print State", command=self.print_state).pack(side="left", padx=(0, 5))
         ttk.Button(button_frame, text="Process", command=self.process).pack(side="left")
@@ -96,6 +104,7 @@ class PathPickerApp:
         self.log(f"Recursive: {self.recursive_var.get()}")
         self.log(f"Remove empty directories: {self.remove_empty_dirs_var.get()}")
         self.log(f"Use file creation date for invalid files: {self.invalid_as_file_date_var.get()}")
+        self.log(f"Apply DST: {self.apply_dst_var.get()}")
 
     def process(self):
         # Run the real work in a background thread
@@ -110,7 +119,8 @@ class PathPickerApp:
                 special_directories=config["special_directories"], 
                 log_callback=self.log,
                 delete_empty_directories=self.remove_empty_dirs_var.get(),
-                invalid_as_file_date=self.invalid_as_file_date_var.get()
+                invalid_as_file_date=self.invalid_as_file_date_var.get(),
+                apply_dst=self.apply_dst_var.get()
             )
             
             # Process the directory
