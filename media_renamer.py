@@ -83,10 +83,16 @@ class MediaRenamer:
                 # deal with duplicate file
                 if filecmp.cmp(entry.as_posix(), target):
                     # it's exactly the same file...delete the source
+                    delete_dir_path = os.path.join(working_directory, "delete")
+                    file_count = 0
+                    if os.path.exists(delete_dir_path):
+                        file_count = len(os.listdir(delete_dir_path))
+                        
                     self.log(f"DELETE: {entry.as_posix()}")
                     self.deleted_files.append(entry.as_posix())
                     target_filename, target_extension = os.path.splitext(os.path.basename(target))
-                    target = os.path.join(working_directory, "delete", f"{target_filename}_{hash}{target_extension}")
+                    target_filename = f"{target_filename}_{file_count:05}"
+                    target = os.path.join(delete_dir_path, f"{target_filename}{target_extension}")
 
                     # not self.simulate and os.remove(entry.as_posix())
                     # return
@@ -95,7 +101,7 @@ class MediaRenamer:
                     # calculate hash of file
                     hash = hashlib.md5(open(entry.as_posix(), "rb").read()).hexdigest()
                     target_filename, target_extension = os.path.splitext(os.path.basename(target))
-                    target = os.path.join(working_directory, "duplicates", f"{target_filename}_{hash}{target_extension}")
+                    target = os.path.join(working_directory, "duplicates", f"{target_filename}_{hash[-4:]}{target_extension}")
                     self.log(f"DUPLICATE: {entry.as_posix()} = {target}")
                     self.duplicate_files.append(target)
 
