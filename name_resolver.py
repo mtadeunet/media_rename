@@ -83,7 +83,7 @@ Instructions:
 2. Automatically rotate the image to the correct orientation before analyzing.
 3. Dates are usually on top of the image, before any description or details.
 4. Look for dates near fields labeled 'Data', 'Data e Hora', or 'Date'.
-5. The dates are usually in one of these formats: YYYY-MM-DD, YYYY/MM/DD, DD/MM/YYYY.
+5. The dates are usually in one of these formats: YYYY-MM-DD, YYYY/MM/DD, DD/MM/YYYY, DD.MM.YYYY, DD-MM-YYYY.
 6. Time is usually in the format HH:MM or HH:MM:SS.
 7. Always double check the dates to make sure they are correct. This needs to be very precise.
 8. If you can't find a date in the first orientation, try rotating the image 90 degrees and look again.
