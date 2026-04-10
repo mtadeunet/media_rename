@@ -7,6 +7,7 @@ from config import SearchType
 from pdf2image import convert_from_path
 from io import BytesIO
 from zoneinfo import ZoneInfo
+import hashlib
 
 class NameResolver:
     def __init__(self, file_path: str, config: dict, timezone: str = 'UTC', apply_dst: bool = True):
@@ -34,13 +35,13 @@ class NameResolver:
         return datetime.strptime(date_str, format)
 
 
-    def format_name(self, date: datetime):
+    def format_name(self, date: datetime, hash):
         pattern = self.config["file_pattern"]
         if "%f" in pattern:
             offset = date.strftime("%f")[:-3]
             pattern = pattern.replace("%f", offset)
 
-        self.name = self.date.strftime(pattern) + os.path.splitext(self.file_path)[1]
+        self.name = self.date.strftime(pattern) + "_" + hash[-4:] + os.path.splitext(self.file_path)[1]
         self.suggested_directory = self.date.strftime(self.config["directory_pattern"])
 
 
@@ -120,7 +121,8 @@ Return the date in the format YYYYMMDD_HHMMSS with no other text. If no date is 
                 raise Exception("No date found")
                 
             self.date = self.parse_date(date_str, "%Y%m%d_%H%M%S")
-            self.format_name(self.date)
+            hash = hashlib.md5(open(self.file_path, "rb").read()).hexdigest()
+            self.format_name(self.date, hash)
         except Exception as e:
             print(f"Error processing image: {str(e)}")
             return None
@@ -153,7 +155,8 @@ Return the date in the format YYYYMMDD_HHMMSS with no other text. If no date is 
         else:
             raise Exception(f"Unsupported file type: {metadata['File:FileType']} {self.file_path}")
         
-        self.format_name(self.date)
+        hash = hashlib.md5(open(self.file_path, "rb").read()).hexdigest()
+        self.format_name(self.date, hash)
 
 
     def from_creation_date(self):
@@ -167,4 +170,5 @@ Return the date in the format YYYYMMDD_HHMMSS with no other text. If no date is 
         date = metadata["File:FileModifyDate"]
         
         self.date = self.parse_date(date)
-        self.format_name(self.date)
+        hash = hashlib.md5(open(self.file_path, "rb").read()).hexdigest()
+        self.format_name(self.date, hash)
